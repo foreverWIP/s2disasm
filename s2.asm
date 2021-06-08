@@ -15,38 +15,8 @@
 ; See s2.notes.txt for more comments about this disassembly and other useful info.
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-; ASSEMBLY OPTIONS:
-;
-    ifndef gameRevision
-gameRevision = 1
-    endif
-;	| If 0, a REV00 ROM is built
-;	| If 1, a REV01 ROM is built, which contains some fixes
-;	| If 2, a (probable) REV02 ROM is built, which contains even more fixes
-padToPowerOfTwo = 1
-;	| If 1, pads the end of the ROM to the next power of two bytes (for real hardware)
-;
-allOptimizations = 0
-;	| If 1, enables all optimizations
-;
-skipChecksumCheck = 0|allOptimizations
-;	| If 1, disables the unnecessary (and slow) bootup checksum calculation
-;
-zeroOffsetOptimization = 0|allOptimizations
-;	| If 1, makes a handful of zero-offset instructions smaller
-;
-removeJmpTos = 0|gameRevision=2|allOptimizations
-;	| If 1, many unnecessary JmpTos are removed, improving performance
-;
-addsubOptimize = 0|gameRevision=2|allOptimizations
-;	| If 1, some add/sub instructions are optimized to addq/subq
-;
-relativeLea = 0|gameRevision<>2|allOptimizations
-;	| If 1, makes some instructions use pc-relative addressing, instead of absolute long
-;
-useFullWaterTables = 0
-;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
-;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
+; General assembly options
+	include "s2.options.asm"
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; AS-specific macros and assembler settings
@@ -34492,7 +34462,11 @@ Sonic_Super:
 	tst.b	(Update_HUD_timer).w
 	beq.s	Sonic_RevertToNormal ; ?
 	subq.w	#1,(Super_Sonic_frame_count).w
+	if fixSuperSonicRingTiming
+	bhi.w	return_1AC3C
+	else
 	bpl.w	return_1AC3C
+	endif
 	move.w	#60,(Super_Sonic_frame_count).w	; Reset frame counter to 60
 	tst.w	(Ring_count).w
 	beq.s	Sonic_RevertToNormal

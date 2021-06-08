@@ -9,6 +9,24 @@ Size_of_SEGA_sound =		$6174
 Size_of_Snd_driver_guess =	$F64 ; approximate post-compressed size of the Z80 sound driver
 
 ; ---------------------------------------------------------------------------
+; Player Constants
+; --------------------------------------------------------------------------- 
+SONIC_ACCEL_NORMAL = $C
+SONIC_ACCEL_SPEEDSHOES = $18
+SONIC_ACCEL_SUPER = $30
+SONIC_ACCEL_NORMAL_WATER = 6
+
+SONIC_DECEL_NORMAL = $80
+SONIC_DECEL_SUPER = $100
+SONIC_DECEL_NORMAL_WATER = $40
+
+SONIC_TOPSPEED_NORMAL = $600
+SONIC_TOPSPEED_NORMAL_WATER = $300
+SONIC_TOPSPEED_SUPER = $A00
+SONIC_TOPSPEED_SUPER_WATER = $500
+SONIC_TOPSPEED_SPEEDSHOES = $C00
+
+; ---------------------------------------------------------------------------
 ; Object Status Table offsets (for everything between Object_RAM and Primary_Collision)
 ; ---------------------------------------------------------------------------
 ; universally followed object conventions:
