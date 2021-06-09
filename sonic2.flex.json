@@ -1,7 +1,7 @@
 {
     "Flex": 2,
     "name": "Sonic 2",
-    "node": "dad6e825-1660-4429-93f6-dd09b880aa01",
+    "node": "82a37001-54b5-4793-929f-4dcdb43eb75f",
     "objects": [
         {
             "name": "Common",
@@ -332,10 +332,63 @@
                         "label": ""
                     },
                     "uuid": "f6dd09b8-80aa-41d0-b5b5-56b686f98e27"
+                },
+                {
+                    "uuid": "4f82a370-0154-45b7-9312-9f4dcdb43eb7",
+                    "format": "Sonic 2.js",
+                    "name": "Menu Text",
+                    "palettes": [],
+                    "art": {
+                        "path": "art/nemesis/Standard font.bin",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    }
+                },
+                {
+                    "uuid": "82a37001-54b5-4793-929f-4dcdb43eb75f",
+                    "format": "Sonic 2.js",
+                    "name": "Credits Text",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/CNZ.bin",
+                            "length": 1
+                        },
+                        {
+                            "path": "art/palettes/SonicAndTails2.bin",
+                            "length": 1
+                        },
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "art": {
+                        "path": "art/nemesis/Credit Text.bin",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    }
                 }
             ],
             "isDirectory": true,
-            "expanded": false,
+            "expanded": true,
             "uuid": "a898dad6-e825-4660-9429-93f6dd09b880"
         },
         {

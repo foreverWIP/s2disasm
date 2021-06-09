@@ -10,11 +10,8 @@ gameRevision = 1
 padToPowerOfTwo = 1
 ;	| If 1, pads the end of the ROM to the next power of two bytes (for real hardware)
 ;
-allOptimizations = 0
+allOptimizations = 1
 ;	| If 1, enables all optimizations
-;
-skipChecksumCheck = 0|allOptimizations
-;	| If 1, disables the unnecessary (and slow) bootup checksum calculation
 ;
 zeroOffsetOptimization = 0|allOptimizations
 ;	| If 1, makes a handful of zero-offset instructions smaller
@@ -31,6 +28,6 @@ relativeLea = 0|gameRevision<>2|allOptimizations
 useFullWaterTables = 0
 ;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
-fixSuperSonicRingTiming = 1
-;	| If 1, adjusts the ring drain code for super sonic to drain 1 ring every 60 seconds, instead of
-;   | every 61 seconds like the original
+devMode = 1
+;   | If 1, enables useful features while developing and testing the game, such as immediate
+;   | level select

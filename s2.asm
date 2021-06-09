@@ -118,7 +118,7 @@ Header:
     endif
 ; word_18E
 Checksum:
-	dc.w $D951		; Checksum (patched later if incorrect)
+	dc.w $1192		; Checksum (check is removed, so this can be whatever value)
 	dc.b "J               " ; I/O Support
 	dc.l StartOfRom		; Start address of ROM
 ; dword_1A4
@@ -324,27 +324,10 @@ CheckSumCheck:
 	bne.s	CheckSumCheck	; wait until DMA is completed
     endif
 	btst	#6,(HW_Expansion_Control).l
-	beq.s	ChecksumTest
+	beq.s	+
 	cmpi.l	#'init',(Checksum_fourcc).w ; has checksum routine already run?
 	beq.w	GameInit
-
-; loc_328:
-ChecksumTest:
-    if skipChecksumCheck=0	; checksum code
-	movea.l	#EndOfHeader,a0	; start checking bytes after the header ($200)
-	movea.l	#ROMEndLoc,a1	; stop at end of ROM
-	move.l	(a1),d0
-	moveq	#0,d1
-; loc_338:
-ChecksumLoop:
-	add.w	(a0)+,d1
-	cmp.l	a0,d0
-	bhs.s	ChecksumLoop
-	movea.l	#Checksum,a1	; read the checksum
-	cmp.w	(a1),d1	; compare correct checksum to the one in ROM
-	bne.w	ChecksumError	; if they don't match, branch
-    endif
-;checksum_good:
++
 	lea	(System_Stack).w,a6
 	moveq	#0,d7
 
@@ -369,7 +352,13 @@ GameClrRAM:
 	bsr.w	VDPSetupGame
 	bsr.w	JmpTo_SoundDriverLoad
 	bsr.w	JoypadInit
+	if devMode
+	moveq	#PLCID_Std1,d0
+	bsr.w	LoadPLC2
+	move.b	#GameModeID_LevelSelect,(Game_Mode).w
+	else
 	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; set Game Mode to Sega Screen
+	endif
 ; loc_394:
 MainGameLoop:
 	move.b	(Game_Mode).w,d0 ; load Game Mode
@@ -390,23 +379,6 @@ GameMode_2PLevelSelect:	bra.w	LevelSelectMenu2P	; 2P level select mode
 GameMode_EndingSequence:bra.w	JmpTo_EndingSequence	; End sequence mode
 GameMode_OptionsMenu:	bra.w	OptionsMenu		; Options mode
 GameMode_LevelSelect:	bra.w	LevelSelectMenu		; Level select mode
-; ===========================================================================
-    if skipChecksumCheck=0	; checksum error code
-; loc_3CE:
-ChecksumError:
-	move.l	d1,-(sp)
-	bsr.w	VDPSetupGame
-	move.l	(sp)+,d1
-	move.l	#vdpComm($0000,CRAM,WRITE),(VDP_control_port).l ; set VDP to CRAM write
-	moveq	#$3F,d7
-; loc_3E2:
-Checksum_Red:
-	move.w	#$E,(VDP_data_port).l ; fill palette with red
-	dbf	d7,Checksum_Red	; repeat $3F more times
-; loc_3EE:
-ChecksumFailed_Loop:
-	bra.s	ChecksumFailed_Loop
-    endif
 ; ===========================================================================
 ; loc_3F0:
 LevelSelectMenu2P: ;;
@@ -1281,9 +1253,8 @@ ClearScreen:
 	clr.l	(Vscroll_Factor).w
 	clr.l	(unk_F61A).w
 
-	; Bug: These '+4's shouldn't be here; clearRAM accidentally clears an additional 4 bytes
-	clearRAM Sprite_Table,Sprite_Table_End+4
-	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End+4
+	clearRAM Sprite_Table,Sprite_Table_End
+	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End
 
 	startZ80
 	rts
@@ -4299,8 +4270,7 @@ Level_ClrRam:
 	clearRAM MiscLevelVariables,MiscLevelVariables_End
 	clearRAM Misc_Variables,Misc_Variables_End
 	clearRAM Oscillating_Data,Oscillating_variables_End
-	; Bug: The '+C0' shouldn't be here; CNZ_saucer_data is only $40 bytes large
-	clearRAM CNZ_saucer_data,CNZ_saucer_data_End+$C0
+	clearRAM CNZ_saucer_data,CNZ_saucer_data_End
 
 	cmpi.w	#chemical_plant_zone_act_2,(Current_ZoneAndAct).w ; CPZ 2
 	beq.s	Level_InitWater
@@ -6019,28 +5989,14 @@ SpecialStage:
 ; | Now we clear out some regions in main RAM where we want to store some  |
 ; | of our data structures.                                                |
 ; \------------------------------------------------------------------------/
-	; Bug: These '+4's shouldn't be here; clearRAM accidentally clears an additional 4 bytes
-	clearRAM SS_Sprite_Table,SS_Sprite_Table_End+4
-	clearRAM SS_Horiz_Scroll_Buf_1,SS_Horiz_Scroll_Buf_1_End+4
-	clearRAM SS_Misc_Variables,SS_Misc_Variables_End+4
+	clearRAM SS_Sprite_Table,SS_Sprite_Table_End
+	clearRAM SS_Horiz_Scroll_Buf_1,SS_Horiz_Scroll_Buf_1_End
+	clearRAM SS_Misc_Variables,SS_Misc_Variables_End
 	clearRAM SS_Sprite_Table_Input,SS_Sprite_Table_Input_End
 	clearRAM SS_Object_RAM,SS_Object_RAM_End
 
-	; However, the '+4' after SS_Misc_Variables_End is very useful. It resets the
-	; VDP_Command_Buffer queue, avoiding graphical glitches in the Special Stage.
-	; In fact, without reset of the VDP_Command_Buffer queue, Tails sprite DPLCs and other
-	; level DPLCs that are still in the queue erase the Special Stage graphics the next
-	; time ProcessDMAQueue is called.
-	; This '+4' doesn't seem to be intentional, because of the other useless '+4' above,
-	; and because a '+2' is enough to reset the VDP_Command_Buffer queue and fix this bug.
-	; This is a fortunate accident!
-	; Note that this is not a clean way to reset the VDP_Command_Buffer queue because the
-	; VDP_Command_Buffer_Slot address shall be updated as well. They tried to do that in a
-	; clean way after branching to ClearScreen (see below). But they messed up by doing it
-	; after several WaitForVint calls.
-	; You can uncomment the two lines below to clear the VDP_Command_Buffer queue intentionally.
-	;clr.w	(VDP_Command_Buffer).w
-	;move.l	#VDP_Command_Buffer,(VDP_Command_Buffer_Slot).w
+	clr.w	(VDP_Command_Buffer).w
+	move.l	#VDP_Command_Buffer,(VDP_Command_Buffer_Slot).w
 
 	move	#$2300,sr
 	lea	(VDP_control_port).l,a6
@@ -12249,9 +12205,7 @@ CheckCheats:	; This is called from 2 places: the options screen and the level se
 	tst.w	d2				; Test this to determine which cheat to enable
 	bne.s	+				; If not 0, branch
 	move.b	#$F,(Continue_count).w		; Give 15 continues
-	; The next line causes the bug where the OOZ music plays until reset.
-	; Remove "&$7F" to fix the bug.
-	move.b	#SndID_ContinueJingle&$7F,d0	; Play the continue jingle
+	move.b	#SndID_ContinueJingle,d0	; Play the continue jingle
 	jsrto	(PlayMusic).l, JmpTo_PlayMusic
 	bra.s	++
 ; ===========================================================================
@@ -12445,8 +12399,7 @@ EndingSequence:
 	move.w	d0,(Ending_VInt_Subrout).w
 	move.w	d0,(Credits_Trigger).w
 
-	; Bug: The '+4' shouldn't be here; clearRAM accidentally clears an additional 4 bytes
-	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End+4
+	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End
 
 	move.w	#$7FFF,(PalCycle_Timer).w
 	lea	(CutScene).w,a1
@@ -12521,8 +12474,7 @@ EndgameCredits:
 	move.w	d0,(Ending_VInt_Subrout).w
 	move.w	d0,(Credits_Trigger).w
 
-	; Bug: The '+4' shouldn't be here; clearRAM accidentally clears an additional 4 bytes
-	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End+4
+	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End
 
 	moveq	#signextendB(MusID_Credits),d0
 	jsrto	(PlaySound).l, JmpTo2_PlaySound
@@ -13792,8 +13744,8 @@ textLoc function col,line,(($80 * line) + (2 * col))
 
 ; intro text pointers (one intro screen)
 vram_pnt := VRAM_TtlScr_Plane_A_Name_Table
-off_B2B0: creditsPtrs	byte_BD1A,textLoc($0F,$09), byte_BCEE,textLoc($11,$0C), \
-			byte_BCF6,textLoc($03,$0F), byte_BCE9,textLoc($12,$12)
+off_B2B0: creditsPtrs	byte_BD1A,textLoc($04,$09), byte_BCEE,textLoc($11,$0C), \
+			byte_BCF6,textLoc($04,$0F), byte_BCE9,textLoc($12,$12)
 
 ; credits screen pointer table
 off_B2CA:
@@ -13970,7 +13922,7 @@ vram_src := ArtTile_ArtNem_CreditText
 byte_BCE9:	creditText   0,"IN"
 byte_BCEE:	creditText   0,"AND"
 byte_BCF6:	creditText   0,"MILES 'TAILS' PROWER"
-byte_BD1A:	creditText   0,"SONIC"
+byte_BD1A:	creditText   0,"SONIC THE HEDGEHOG"
 
  charset ; revert character set
 
@@ -14323,22 +14275,6 @@ InitCam_HTZ:
 InitCam_HPZ:
     if gameRevision=0
 	asr.w	#1,d0
-	move.w	d0,(Camera_BG_Y_pos).w
-	clr.l	(Camera_BG_X_pos).w
-	rts
-    endif
-; ===========================================================================
-; Leftover Spring Yard Zone code from Sonic 1
-
-; Unknown_Zone_BG:
-;InitCam_SYZ:
-    if gameRevision=0
-	asl.l	#4,d0
-	move.l	d0,d2
-	asl.l	#1,d0
-	add.l	d2,d0
-	asr.l	#8,d0
-	addq.w	#1,d0
 	move.w	d0,(Camera_BG_Y_pos).w
 	clr.l	(Camera_BG_X_pos).w
 	rts
@@ -14697,14 +14633,16 @@ SwScrl_EHZ:
 	move.w	d3,(a1)+
 	move.w	d4,(a1)+
 	move.w	d3,(a1)+
+	move.w	d4,(a1)+
+	move.w	d3,(a1)+
+	move.w	d4,(a1)+
+	move.w	d3,(a1)+
 	swap	d3
 	add.l	d0,d3
 	add.l	d0,d3
 	add.l	d0,d3
 	swap	d3
 	dbf	d1,-
-
-	; note there is a bug here. the bottom 8 pixels haven't had their hscroll values set. only the EHZ scrolling code has this bug.
 
 	rts
 ; ===========================================================================
@@ -30265,8 +30203,7 @@ ObjectsManager_Init:
 	move.w	#$101,(a2)+	; the first two bytes are not used as respawn values
 	; instead, they are used to keep track of the current respawn indexes
 
-	; Bug: The '+7E' shouldn't be here; this loop accidentally clears an additional $7E bytes
-	move.w	#bytesToLcnt(Obj_respawn_data_End-Obj_respawn_data+$7E),d0 ; set loop counter
+	move.w	#bytesToLcnt(Obj_respawn_data_End-Obj_respawn_data),d0 ; set loop counter
 -	clr.l	(a2)+		; loop clears all other respawn values
 	dbf	d0,-
 
@@ -34137,8 +34074,8 @@ Sonic_ChgJumpDir:
 	move.w	(Sonic_top_speed).w,d6
 	move.w	(Sonic_acceleration).w,d5
 	asl.w	#1,d5
-	btst	#4,status(a0)		; did Sonic jump from rolling?
-	bne.s	Obj01_Jump_ResetScr	; if yes, branch to skip midair control
+	; btst	#4,status(a0)		; did Sonic jump from rolling?
+	; bne.s	Obj01_Jump_ResetScr	; if yes, branch to skip midair control
 	move.w	x_vel(a0),d0
 	btst	#button_left,(Ctrl_1_Held_Logical).w
 	beq.s	+	; if not holding left, branch
@@ -34149,6 +34086,9 @@ Sonic_ChgJumpDir:
 	neg.w	d1
 	cmp.w	d1,d0	; compare new speed with top speed
 	bgt.s	+	; if new speed is less than the maximum, branch
+	add.w	d5,d0	; remove this frame's acceleration change
+	cmp.w	d1,d0	; compare speed with top speed
+	ble.s	+	; if speed was already greater than the maximum, branch
 	move.w	d1,d0	; limit speed in air going left, even if Sonic was already going faster (speed limit/cap)
 +
 	btst	#button_right,(Ctrl_1_Held_Logical).w
@@ -34158,6 +34098,9 @@ Sonic_ChgJumpDir:
 	add.w	d5,d0	; accelerate right in the air
 	cmp.w	d6,d0	; compare new speed with top speed
 	blt.s	+	; if new speed is less than the maximum, branch
+	sub.w	d5,d0	; remove this frame's acceleration change
+	cmp.w	d6,d0	; compare speed with top speed
+	bge.s	+	; if speed was already greater than the maximum, branch
 	move.w	d6,d0	; limit speed in air going right, even if Sonic was already going faster (speed limit/cap)
 ; Obj01_JumpMove:
 +	move.w	d0,x_vel(a0)
@@ -34348,7 +34291,7 @@ Sonic_Jump:
 	move.b	#$13,y_radius(a0)
 	move.b	#9,x_radius(a0)
 	btst	#2,status(a0)
-	bne.s	Sonic_RollJump
+	; bne.s	Sonic_RollJump
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.b	#AniIDSonAni_Roll,anim(a0)	; use "jumping" animation
@@ -34359,9 +34302,9 @@ return_1AAE6:
 	rts
 ; ---------------------------------------------------------------------------
 ; loc_1AAE8:
-Sonic_RollJump:
-	bset	#4,status(a0)	; set the rolling+jumping flag
-	rts
+; Sonic_RollJump:
+	; bset	#4,status(a0)	; set the rolling+jumping flag
+	; rts
 ; End of function Sonic_Jump
 
 
@@ -34421,11 +34364,8 @@ Sonic_CheckGoSuper:
 	bne.s	return_1ABA4		; if not, branch
 	cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
 	blo.s	return_1ABA4		; if not, branch
-    if gameRevision=2
-	; fixes a bug where the player can get stuck if transforming at the end of a level
 	tst.b	(Update_HUD_timer).w	; has Sonic reached the end of the act?
 	beq.s	return_1ABA4		; if yes, branch
-    endif
 
 	move.b	#1,(Super_Sonic_palette).w
 	move.b	#$F,(Palette_timer).w
@@ -34462,11 +34402,7 @@ Sonic_Super:
 	tst.b	(Update_HUD_timer).w
 	beq.s	Sonic_RevertToNormal ; ?
 	subq.w	#1,(Super_Sonic_frame_count).w
-	if fixSuperSonicRingTiming
 	bhi.w	return_1AC3C
-	else
-	bpl.w	return_1AC3C
-	endif
 	move.w	#60,(Super_Sonic_frame_count).w	; Reset frame counter to 60
 	tst.w	(Ring_count).w
 	beq.s	Sonic_RevertToNormal
@@ -37053,8 +36989,8 @@ Tails_ChgJumpDir:
 	move.w	(Tails_top_speed).w,d6
 	move.w	(Tails_acceleration).w,d5
 	asl.w	#1,d5
-	btst	#4,status(a0)		; did Tails jump from rolling?
-	bne.s	Obj02_Jump_ResetScr	; if yes, branch to skip midair control
+	; btst	#4,status(a0)		; did Tails jump from rolling?
+	; bne.s	Obj02_Jump_ResetScr	; if yes, branch to skip midair control
 	move.w	x_vel(a0),d0
 	btst	#button_left,(Ctrl_2_Held_Logical).w
 	beq.s	+	; if not holding left, branch
@@ -37065,6 +37001,9 @@ Tails_ChgJumpDir:
 	neg.w	d1
 	cmp.w	d1,d0	; compare new speed with top speed
 	bgt.s	+	; if new speed is less than the maximum, branch
+	add.w	d5,d0	; remove this frame's acceleration change
+	cmp.w	d1,d0	; compare speed with top speed
+	ble.s	+	; if speed was already greater than the maximum, branch
 	move.w	d1,d0	; limit speed in air going left, even if Tails was already going faster (speed limit/cap)
 +
 	btst	#button_right,(Ctrl_2_Held_Logical).w
@@ -37074,6 +37013,9 @@ Tails_ChgJumpDir:
 	add.w	d5,d0	; accelerate right in the air
 	cmp.w	d6,d0	; compare new speed with top speed
 	blt.s	+	; if new speed is less than the maximum, branch
+	sub.w	d5,d0	; remove this frame's acceleration change
+	cmp.w	d6,d0	; compare speed with top speed
+	bge.s	+	; if speed was already greater than the maximum, branch
 	move.w	d6,d0	; limit speed in air going right, even if Tails was already going faster (speed limit/cap)
 ; Obj02_JumpMove:
 +	move.w	d0,x_vel(a0)
@@ -37260,7 +37202,7 @@ Tails_Jump:
 	move.b	#$F,y_radius(a0)
 	move.b	#9,x_radius(a0)
 	btst	#2,status(a0)
-	bne.s	Tails_RollJump
+	; bne.s	Tails_RollJump
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.b	#AniIDTailsAni_Roll,anim(a0)	; use "jumping" animation
@@ -37271,9 +37213,9 @@ return_1C6C2:
 	rts
 ; ---------------------------------------------------------------------------
 ; loc_1C6C4:
-Tails_RollJump:
-	bset	#4,status(a0) ; set the rolling+jumping flag
-	rts
+; Tails_RollJump:
+	; bset	#4,status(a0) ; set the rolling+jumping flag
+	; rts
 ; End of function Tails_Jump
 
 
@@ -41176,10 +41118,7 @@ CheckLeftWallDist_Part2:
 ObjCheckLeftWallDist:
 	add.w	x_pos(a0),d3
 	move.w	y_pos(a0),d2
-	; Engine bug: colliding with left walls is erratic with this function.
-	; The cause is this: a missing instruction to flip collision on the found
-	; 16x16 block; this one:
-	;eori.w	#$F,d3
+	eori.w	#$F,d3
 	lea	(Primary_Angle).w,a4
 	move.b	#0,(a4)
 	movea.w	#-$10,a3
@@ -49209,10 +49148,7 @@ loc_2645E:
 	btst	#0,status(a0)
 	beq.s	loc_2647A
 	not.w	d0
-	; BUG: this should be 2*$1C instead of $27. As is, this makes it
-	; impossible to get as high of a launch from flipped pressure springs
-	; as you can for unflipped ones.
-	addi.w	#$27,d0
+	addi.w	#2*$1C,d0
 
 loc_2647A:
 	tst.w	d0
@@ -60301,11 +60237,9 @@ loc_2E9A8:
 	rts
 ; ===========================================================================
 +
-	; BUG: this should be 'routine' instead of 'routine_secondary'.
-	addq.b	#2,routine_secondary(a0)
+	addq.b	#2,routine(a0)
 	move.l	#Obj5D_MapUnc_2EEA0,mappings(a0)
-	; BUG: this should be make_art_tile(ArtTile_ArtNem_BossSmoke_1,1,0) instead.
-	move.w	#make_art_tile(ArtTile_ArtNem_EggpodJets_1,0,0),art_tile(a0)
+	move.w	#make_art_tile(ArtTile_ArtNem_BossSmoke_1,1,0),art_tile(a0)
 	jsrto	(Adjust2PArtPointer).l, JmpTo60_Adjust2PArtPointer
 	move.b	#0,mapping_frame(a0)
 	move.b	#5,anim_frame_duration(a0)
@@ -63405,7 +63339,7 @@ Obj57_Main_SubA: ; slowly hovering down, no explosions
 	blo.s	Obj57_Main_SubA_Standard
 	lea	(Boss_AnimationArray).w,a1
 	move.b	#$D,7(a1)	; face grin when hit
-	_move.b	#2,0(a2)	; There is a bug here. This should be a1 instead of a2. A random part of RAM gets written to instead.
+	_move.b	#2,0(a1)
 	move.b	#0,1(a1)	; hover thingies fire off
 	addq.b	#2,boss_routine(a0)
 	bra.s	Obj57_Main_SubA_Standard
@@ -69085,8 +69019,7 @@ loc_361D8:
     endm
     endif
 
-	; Bug: The '+4' shouldn't be here; clearRAM accidentally clears an additional 4 bytes
-	clearRAM SS_Sprite_Table,SS_Sprite_Table_End+4
+	clearRAM SS_Sprite_Table,SS_Sprite_Table_End
 
 	rts
 ; ===========================================================================
@@ -74470,9 +74403,7 @@ loc_39B92:
 loc_39BA4:
 	move.w	#$1000,(Camera_Max_X_pos).w
 	addq.b	#2,(Dynamic_Resize_Routine).w
-	; There's a bug here: Level_Music is a word long, not a byte.
-	; All this does is try to play Sound 0, which doesn't do anything.
-	move.b	(Level_Music).w,d0
+	move.w	(Level_Music).w,d0
 	jsrto	(PlayMusic).l, JmpTo5_PlayMusic
 	bra.w	JmpTo65_DeleteObject
 ; ===========================================================================
@@ -74934,9 +74865,7 @@ loc_3A346:
 	bchg	#0,render_flags(a0)
 	bchg	#0,status(a0)
 
-	; This clears a lot more than the horizontal scroll buffer, which is $400 bytes.
-	; This is because the loop counter is erroneously set to $400, instead of ($400/4)-1.
-	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End+$C04	; Bug: That '+$C04' shouldn't be there; accidentally clears an additional $C04 bytes
+	clearRAM Horiz_Scroll_Buf,Horiz_Scroll_Buf_End
 
 	; Initialize streak horizontal offsets for Sonic going right.
 	; 9 full lines (8 pixels) + 7 pixels, 2-byte interleaved entries for PNT A and PNT B
@@ -88531,14 +88460,7 @@ Objects_MTZ_2:	BINCLUDE	"level/objects/MTZ_2.bin"
 	ObjectLayoutBoundary
 Objects_MTZ_3:	BINCLUDE	"level/objects/MTZ_3.bin"
 	ObjectLayoutBoundary
-
-    if gameRevision=0
-; The lampposts were bugged: their 'remember state' flags weren't set
-Objects_WFZ_1:	BINCLUDE	"level/objects/WFZ_1 (REV00).bin"
-    else
 Objects_WFZ_1:	BINCLUDE	"level/objects/WFZ_1.bin"
-    endif
-
 	ObjectLayoutBoundary
 Objects_WFZ_2:	BINCLUDE	"level/objects/WFZ_2.bin"
 	ObjectLayoutBoundary
@@ -89801,15 +89723,7 @@ MusCred_PSG2:	dc.b $80,$30
 		dc.b $F7,$00,$0A
 		dc.w z80_ptr(-)
 		dc.b $80,$60,$F5,$00
-    if 1==1
-		; This is wrong: it should convert from EHZ 2P's PSG2 transpose ($D0)
-		; to CNZ's PSG2 transpose ($DC), but instead of adding $C, it subtracts
-		; $C, causing the note to be too low and underflow the sound driver's
-		; frequency table, producing invalid notes.
-		dc.b $E9,$F4
-    else
 		dc.b $E9,$0C
-    endif
 		dc.b $EC,$FF,$E9,$E8,$80,$60
 		dc.b $F8
 		dc.w z80_ptr(MusCreditsE246)
@@ -89818,11 +89732,6 @@ MusCred_PSG2:	dc.b $80,$30
 		dc.b $B6,$EC,$03,$80,$B1,$80,$B1,$80,$B1,$80,$B1,$EC
 		dc.b $FC,$80,$B1,$80,$B1,$80,$B1,$18,$08,$B1,$04,$EC
 		dc.b $01
-    if 1==1
-		; If the above bug is fixed, then this line needs removing (the track
-		; will already be $18 keys higher).
-		dc.b $E9,$18
-    endif
 		dc.b $F5,$05,$E1,$01,$80,$60,$80,$80,$80
 		dc.b $80,$80,$80,$0C,$CD,$06,$80,$D4,$CD,$80,$0C,$CD
 		dc.b $06,$80,$D4,$CD,$80,$18,$80,$54,$E9,$24,$EC,$FD

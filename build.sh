@@ -12,11 +12,6 @@ if [[ ! -f bin/fixpointer ]]; then
 	gcc -std=c99 -O2 -s -fno-ident -flto -o bin/fixpointer build_source/fixpointer.c &> /dev/null
 fi
 
-if [[ ! -f bin/fixheader ]]; then
-	echo "Compiling fixheader..."
-	gcc -std=c99 -O2 -s -fno-ident -flto -o bin/fixheader build_source/fixheader.c &> /dev/null
-fi
-
 [[ -f s2built.bin ]] && mv -f s2built.bin s2built.prev.bin
 rm -f s2.p s2.h s2.log
 
@@ -50,7 +45,7 @@ done
 
 echo Assembling...
 
-./build_source/asl -xx -c $debug_syms $print_err -A -U -L $revision_override -i . s2.asm
+bin/asl -xx -c $debug_syms $print_err -A -U -L $revision_override -i . s2.asm
 
 if [[ ! -f s2.p ]]; then
 	echo
@@ -66,7 +61,6 @@ fi
 
 [[ -f s2.p ]] && bin/s2p2bin $s2p2bin_args s2.p s2built.bin s2.h
 [[ -f s2built.bin ]] && bin/fixpointer s2.h s2built.bin   off_3A294 MapRUnc_Sonic \$2D 0 4   word_728C_user Obj5F_MapUnc_7240 2 2 1
-[[ -f s2built.bin ]] && bin/fixheader s2built.bin
 
 if [[ -f s2.log ]]; then
 	echo

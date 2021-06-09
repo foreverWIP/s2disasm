@@ -10,6 +10,7 @@
             "args": [
                 "&&",
                 "./blastem64-0.6.2/blastem",
+                "-n",
                 "./s2built.bin"
             ],
             "options": {
