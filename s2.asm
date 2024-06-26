@@ -85,16 +85,16 @@ StartOfRom:
 Vectors:
 	dc.l System_Stack	; Initial stack pointer value
 	dc.l EntryPoint		; Start of program
-	dc.l ErrorTrap		; Bus error
-	dc.l ErrorTrap		; Address error (4)
-	dc.l ErrorTrap		; Illegal instruction
-	dc.l ErrorTrap		; Division by zero
-	dc.l ErrorTrap		; CHK exception
-	dc.l ErrorTrap		; TRAPV exception (8)
-	dc.l ErrorTrap		; Privilege violation
-	dc.l ErrorTrap		; TRACE exception
-	dc.l ErrorTrap		; Line-A emulator
-	dc.l ErrorTrap		; Line-F emulator (12)
+	dc.l BusError		; Bus error
+	dc.l AddressError	; Address error (4)
+	dc.l IllegalInstrError	; Illegal instruction
+	dc.l ZeroDivideError	; Division by zero
+	dc.l CHKExceptionError	; CHK exception
+	dc.l TRAPVError		; TRAPV exception (8)
+	dc.l PrivilegeViolation	; Privilege violation
+	dc.l TraceError		; TRACE exception
+	dc.l LineAEmulation	; Line-A emulator
+	dc.l LineFEmulation	; Line-F emulator (12)
 	dc.l ErrorTrap		; Unused (reserved)
 	dc.l ErrorTrap		; Unused (reserved)
 	dc.l ErrorTrap		; Unused (reserved)
@@ -107,7 +107,7 @@ Vectors:
 	dc.l ErrorTrap		; Unused (reserved)
 	dc.l ErrorTrap		; Unused (reserved)
 	dc.l ErrorTrap		; Unused (reserved) (24)
-	dc.l ErrorTrap		; Spurious exception
+	dc.l SpuriousException	; Spurious exception
 	dc.l ErrorTrap		; IRQ level 1
 	dc.l ErrorTrap		; IRQ level 2
 	dc.l ErrorTrap		; IRQ level 3 (28)
@@ -115,22 +115,22 @@ Vectors:
 	dc.l ErrorTrap		; IRQ level 5
 	dc.l V_Int			; IRQ level 6 (vertical retrace interrupt)
 	dc.l ErrorTrap		; IRQ level 7 (32)
-	dc.l ErrorTrap		; TRAP #00 exception
-	dc.l ErrorTrap		; TRAP #01 exception
-	dc.l ErrorTrap		; TRAP #02 exception
-	dc.l ErrorTrap		; TRAP #03 exception (36)
-	dc.l ErrorTrap		; TRAP #04 exception
-	dc.l ErrorTrap		; TRAP #05 exception
-	dc.l ErrorTrap		; TRAP #06 exception
-	dc.l ErrorTrap		; TRAP #07 exception (40)
-	dc.l ErrorTrap		; TRAP #08 exception
-	dc.l ErrorTrap		; TRAP #09 exception
-	dc.l ErrorTrap		; TRAP #10 exception
-	dc.l ErrorTrap		; TRAP #11 exception (44)
-	dc.l ErrorTrap		; TRAP #12 exception
-	dc.l ErrorTrap		; TRAP #13 exception
-	dc.l ErrorTrap		; TRAP #14 exception
-	dc.l ErrorTrap		; TRAP #15 exception (48)
+	dc.l TrapVector		; TRAP #00 exception
+	dc.l TrapVector		; TRAP #01 exception
+	dc.l TrapVector		; TRAP #02 exception
+	dc.l TrapVector		; TRAP #03 exception (36)
+	dc.l TrapVector		; TRAP #04 exception
+	dc.l TrapVector		; TRAP #05 exception
+	dc.l TrapVector		; TRAP #06 exception
+	dc.l TrapVector		; TRAP #07 exception (40)
+	dc.l TrapVector		; TRAP #08 exception
+	dc.l TrapVector		; TRAP #09 exception
+	dc.l TrapVector		; TRAP #10 exception
+	dc.l TrapVector		; TRAP #11 exception (44)
+	dc.l TrapVector		; TRAP #12 exception
+	dc.l TrapVector		; TRAP #13 exception
+	dc.l TrapVector		; TRAP #14 exception
+	dc.l TrapVector		; TRAP #15 exception (48)
 	dc.l ErrorTrap		; Unused (reserved)
 	dc.l ErrorTrap		; Unused (reserved)
 	dc.l ErrorTrap		; Unused (reserved)
@@ -177,6 +177,8 @@ ROMEndLoc:
 	dc.b "                                        "	; Notes (unused, anything can be put in this space, but it has to be 52 bytes.)
 	dc.b "JUE             " ; Country code (region)
 EndOfHeader:
+
+        include "debugger/Debugger.asm"
 
 ; ===========================================================================
 ; Crash/Freeze the 68000. Note that the Z80 continues to run, so the music keeps playing.
