@@ -1071,7 +1071,11 @@ Tails_InvincibilityStars:
 LevelOnly_Object_RAM_End:
 
 Chunk_Mappings_Ptr:		ds.l	1
-				ds.b	$1FC	; unused
+Level_FG_WidthChunks:	ds.b	1
+Level_BG_WidthChunks:	ds.b	1
+Level_FG_HeightChunks:	ds.b	1
+Level_BG_HeightChunks:	ds.b	1
+				ds.b	$1F8	; unused
 
 Primary_Collision:		ds.b	$300
 Secondary_Collision:		ds.b	$300

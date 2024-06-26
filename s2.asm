@@ -5458,6 +5458,7 @@ OilSlides:
 	lsr.w	#7,d1
 	andi.w	#$7F,d1
 	add.w	d1,d0
+	add.w	d0,d0
 	lea	(Level_Layout).l,a2
 	move.b	(a2,d0.w),d0
 	lea	OilSlides_Chunks_End(pc),a2
@@ -18527,7 +18528,7 @@ SetHorizScrollFlagsBG2:	; only used by CPZ
 	lea	(VDP_data_port).l,a6
 	lea	(Scroll_flags_BG).w,a2
 	lea	(Camera_BG_X_pos).w,a3
-	lea	(Level_Layout+$80).l,a4
+	lea	(Level_Layout+($80*2)).l,a4
 	move.w	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE)>>16,d2
 	bsr.w	Draw_BG1
 	lea	(Scroll_flags_BG2).w,a2
@@ -18550,7 +18551,7 @@ LoadTilesAsYouMove:
 	lea	(VDP_data_port).l,a6
 	lea	(Scroll_flags_BG_copy).w,a2
 	lea	(Camera_BG_copy).w,a3
-	lea	(Level_Layout+$80).l,a4	; first background line
+	lea	(Level_Layout+($80*2)).l,a4	; first background line
 	move.w	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE)>>16,d2
 	bsr.w	Draw_BG1
 
@@ -19566,8 +19567,9 @@ GetAddressOfBlockInChunk:
 	lsr.w	#4,d0		; divide by 16 (overall division of 128)
 	andi.w	#$7F,d0
 	add.w	d3,d0		; get offset of current 128x128 in the level layout table
+	add.w	d0,d0
 	clr.l	d3
-	move.b	(a4,d0.w),d3	; get tile ID of the current 128x128 tile
+	move.w	(a4,d0.w),d3	; get tile ID of the current 128x128 tile
 	lsl.w	#7,d3		; multiply by 128, the size in bytes of a 128x128 in RAM
 	andi.w	#$70,d4		; round down to nearest 16-pixel boundary
 	andi.w	#$E,d5		; force this to be a multiple of 16
@@ -19803,8 +19805,9 @@ GetBlock:
 	lsr.w	#4,d0		; divide by 16 (overall division of 128)
 	andi.w	#$7F,d0
 	add.w	d3,d0		; get offset of current 128x128 in the level layout table
+	add.w	d0,d0
 	clr.l	d3
-	move.b	(a4,d0.w),d3	; get tile ID of the current 128x128 tile
+	move.w	(a4,d0.w),d3	; get tile ID of the current 128x128 tile
 	lsl.w	#7,d3		; multiply by 128, the size in bytes of a 128x128 in RAM
 	andi.w	#$70,d4		; round down to nearest 16-pixel boundary
 	andi.w	#$E,d5		; force this to be a multiple of 16
@@ -19908,7 +19911,7 @@ DrawInitialBG:
 	lea	(VDP_control_port).l,a5
 	lea	(VDP_data_port).l,a6
 	lea	(Camera_BG_X_pos).w,a3
-	lea	(Level_Layout+$80).l,a4	; background
+	lea	(Level_Layout+($80*2)).l,a4	; background
 	move.w	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE)>>16,d2
     if fixBugs
 	; The purpose of this function is to dynamically load a portion of
@@ -20112,6 +20115,7 @@ loadLevelLayout:
 	lea	(Off_Level).l,a0
 	move.w	(a0,d0.w),d0
 	lea	(a0,d0.l),a0
+	move.l	(a0)+,(Level_FG_WidthChunks).l
 	lea	(Level_Layout).l,a1
 	jmpto	KosDec, JmpTo_KosDec
 ; End of function loadLevelLayout
@@ -21538,7 +21542,7 @@ LevEvents_CNZ2_Routine1:
 	move.w	(Camera_X_pos).w,(Tails_Min_X_pos).w
 	move.w	#$62E,(Camera_Max_Y_pos_target).w
 	move.w	#$62E,(Tails_Max_Y_pos).w
-	move.b	#$F9,(Level_Layout+$C54).l
+	move.b	#$F9,(Level_Layout+($C54*2)).l
 	addq.b	#2,(Dynamic_Resize_Routine).w
 +
 	rts
@@ -21552,7 +21556,7 @@ LevEvents_CNZ2_Routine1:
 LevEvents_CNZ2_Routine2:
 	cmpi.w	#$2890,(Camera_X_pos).w
 	blo.s	+	; rts
-	move.b	#$F9,(Level_Layout+$C50).l
+	move.b	#$F9,(Level_Layout+($C50*2)).l
 	move.w	#$2860,(Camera_Min_X_pos).w
 	move.w	#$28E0,(Camera_Max_X_pos).w
 	move.w	#$2860,(Tails_Min_X_pos).w
@@ -43020,9 +43024,10 @@ Find_Tile:
 	lsr.w	#4,d1	; x_pos/128 = x_of_chunk
 	andi.w	#$7F,d1
 	add.w	d1,d0	; d0 is relevant chunk ID now
+	add.w	d0,d0
 	clr.l	d1
 	lea	(Level_Layout).l,a1
-	move.b	(a1,d0.w),d1	; move 128*128 chunk ID to d1
+	move.w	(a1,d0.w),d1	; move 128*128 chunk ID to d1
 	add.w	d1,d1
 	move.w	word_1E5D0(pc,d1.w),d1
 	move.w	d2,d0	; y_pos
@@ -67418,7 +67423,7 @@ loc_31D7E:
 	andi.b	#$F0,6(a1)
 	ori.b	#3,6(a1)
 	_move.b	#8,0(a1)
-	move.b	#$DD,(Level_Layout+$C54).l
+	move.b	#$DD,(Level_Layout+($C54*2)).l
 	move.b	#1,(Screen_redraw_flag).w
 	move.w	#-$12,(Boss_Countdown).w
 
@@ -79643,13 +79648,13 @@ ObjB2_Jump_to_plane:
 	beq.s	+
 	addq.b	#2,routine_secondary(a0)
 	move.w	#$20,objoff_2E(a0)
-	lea	(Level_Layout+$0D2).l,a1
+	lea	(Level_Layout+($0D2*2)).l,a1
 	move.l	#$501F0025,(a1)+
-	lea	(Level_Layout+$1D2).l,a1
+	lea	(Level_Layout+($1D2*2)).l,a1
 	move.l	#$25001F50,(a1)+
-	lea	(Level_Layout+$BD6).l,a1
+	lea	(Level_Layout+($BD6*2)).l,a1
 	move.l	#$501F0025,(a1)+
-	lea	(Level_Layout+$CD6).l,a1
+	lea	(Level_Layout+($CD6*2)).l,a1
 	move.l	#$25001F50,(a1)+
 + ; BranchTo6_JmpTo45_DisplaySprite:
 	jmpto	DisplaySprite, JmpTo45_DisplaySprite
@@ -81704,10 +81709,10 @@ ObjC2_Bust:
 	move.b	#2,routine(a0)
 	bset	#1,(MainCharacter+status).w
 	bclr	#3,(MainCharacter+status).w
-	lea	(Level_Layout+$850).l,a1	; alter the level layout
+	lea	(Level_Layout+($850*2)).l,a1	; alter the level layout
 	move.l	#$8A707172,(a1)+
 	move.w	#$7374,(a1)+
-	lea	(Level_Layout+$950).l,a1
+	lea	(Level_Layout+($950*2)).l,a1
 	move.l	#$6E787978,(a1)+
 	move.w	#$787A,(a1)+
 	move.b	#1,(Screen_redraw_flag).w
