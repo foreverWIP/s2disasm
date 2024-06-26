@@ -976,10 +976,8 @@ ramaddr function x,-(-x)&$FFFFFFFF
 	phase	ramaddr($FFFF0000)	; Pretend we're in the RAM
 RAM_Start:
 
-Chunk_Table:			ds.b	$8000	; was "Metablock_Table"
-Chunk_Table_End:
-
-Level_Layout:			ds.b	$1000
+Scratch_Buffer:
+Level_Layout:			ds.b	$9000
 Level_Layout_End:
 
 Block_Table:			ds.w	$C00
@@ -1072,7 +1070,8 @@ Tails_InvincibilityStars:
 				ds.b	object_size
 LevelOnly_Object_RAM_End:
 
-				ds.b	$200	; unused
+Chunk_Mappings_Ptr:		ds.l	1
+				ds.b	$1FC	; unused
 
 Primary_Collision:		ds.b	$300
 Secondary_Collision:		ds.b	$300

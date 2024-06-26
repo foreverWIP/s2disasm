@@ -1089,7 +1089,7 @@ off_D3C:	offsetTable
 	move.w	#$8B00,(a6)		; EXT-INT off, V scroll by screen, H scroll by screen
 	move.w	#$8400|(VRAM_EndSeq_Plane_B_Name_Table2/$2000),(a6)	; PNT B base: $4000
 	move.w	#$9011,(a6)		; Scroll table size: 64x64
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_EndSeq_Plane_A_Name_Table + planeLoc(64,22,33),VRAM,WRITE),d0	;$50AC0003
 	moveq	#23-1,d1
 	moveq	#15-1,d2
@@ -4048,12 +4048,12 @@ SegaScreen:
 	lea	(ArtNem_SilverSonic).l,a0
 	bsr.w	NemDec
 
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_SEGA).l,a0
 	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),d0
 	bsr.w	EniDec
 
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_SegaScr_Plane_B_Name_Table,VRAM,WRITE),d0
 	moveq	#40-1,d1	; 40 cells wide
 	moveq	#28-1,d2	; 28 cells tall
@@ -4255,46 +4255,46 @@ TitleScreen:
 	move	#$2700,sr
 
 	; Decompress the first part of the title screen background plane map...
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_TitleScreen).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_Title,2,0),d0
 	bsr.w	EniDec
 
 	; ...and send it to VRAM.
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_TtlScr_Plane_B_Name_Table,VRAM,WRITE),d0
 	moveq	#40-1,d1 ; Width
 	moveq	#28-1,d2 ; Height
 	jsrto	PlaneMapToVRAM_H40, PlaneMapToVRAM_H40
 
 	; Decompress the second part of the title screen background plane map...
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_TitleBack).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_Title,2,0),d0
 	bsr.w	EniDec
 
 	; ...and send it to VRAM.
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_TtlScr_Plane_B_Name_Table+planeLoc(64,40,0),VRAM,WRITE),d0
 	moveq	#24-1,d1 ; Width
 	moveq	#28-1,d2 ; Height
 	jsrto	PlaneMapToVRAM_H40, PlaneMapToVRAM_H40
 
 	; Decompress the title screen emblem plane map...
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_TitleLogo).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_Title,3,1),d0
 	bsr.w	EniDec
 
 	; ...add the copyright text to it...
-	lea	(Chunk_Table+planeLoc(40,28,26)).l,a1
+	lea	(Scratch_Buffer+planeLoc(40,28,26)).l,a1
 	lea	(CopyrightText).l,a2
 	moveq	#bytesToWcnt(CopyrightText_End-CopyrightText),d6
 -	move.w	(a2)+,(a1)+
 	dbf	d6,-
 
 	; ...and send it to VRAM.
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_TtlScr_Plane_A_Name_Table,VRAM,WRITE),d0
 	moveq	#40-1,d1 ; Width
 	moveq	#28-1,d2 ; Height
@@ -5456,7 +5456,7 @@ OilSlides:
 	lsr.w	#7,d1
 	andi.w	#$7F,d1
 	add.w	d1,d0
-	lea	(Level_Layout).w,a2
+	lea	(Level_Layout).l,a2
 	move.b	(a2,d0.w),d0
 	lea	OilSlides_Chunks_End(pc),a2
 
@@ -6400,20 +6400,20 @@ LoadZoneTiles:
 	move.l	(a2)+,d0
 	andi.l	#$FFFFFF,d0	; 8x8 tile pointer
 	movea.l	d0,a0
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	bsr.w	KosDec
 	move.w	a1,d3
 	cmpi.b	#hill_top_zone,(Current_Zone).w
 	bne.s	+
 	lea	(ArtKos_HTZ).l,a0
-	lea	(Chunk_Table+tiles_to_bytes(ArtTile_ArtKos_NumTiles_HTZ_Main)).l,a1
+	lea	(Scratch_Buffer+tiles_to_bytes(ArtTile_ArtKos_NumTiles_HTZ_Main)).l,a1
 	bsr.w	KosDec	; patch for HTZ
 	move.w	#tiles_to_bytes(ArtTile_ArtKos_NumTiles_HTZ),d3
 +
 	cmpi.b	#wing_fortress_zone,(Current_Zone).w
 	bne.s	+
 	lea	(ArtKos_WFZ).l,a0
-	lea	(Chunk_Table+tiles_to_bytes(ArtTile_ArtKos_NumTiles_WFZ_Main)).l,a1
+	lea	(Scratch_Buffer+tiles_to_bytes(ArtTile_ArtKos_NumTiles_WFZ_Main)).l,a1
 	bsr.w	KosDec	; patch for WFZ
 	move.w	#tiles_to_bytes(ArtTile_ArtKos_NumTiles_WFZ),d3
 +
@@ -9062,11 +9062,11 @@ ssInitTableBuffers:
 
 ssLdComprsdData:
 	lea	(ArtKos_Special).l,a0
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	bsr.w	KosDec
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_VRAM_Start),VRAM,WRITE),(VDP_control_port).l
 	lea	(VDP_data_port).l,a1
-	movea.l	#Chunk_Table,a0
+	movea.l	#Scratch_Buffer,a0
 	move.w	(a0)+,d0
 	subq.w	#1,d0
 
@@ -9096,19 +9096,19 @@ ssLdComprsdData:
 SSPlaneB_Background:
 	move	#$2700,sr
 
-	movea.l	#Chunk_Table+planeLoc(32,0,0),a1
+	movea.l	#Scratch_Buffer+planeLoc(32,0,0),a1
 	lea	(MapEng_SpecialBackBottom).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_SpecialBack,0,0),d0
 	bsr.w	EniDec
 
-	movea.l	#Chunk_Table+planeLoc(32,0,16),a1
+	movea.l	#Scratch_Buffer+planeLoc(32,0,16),a1
 	lea	(MapEng_SpecialBack).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_SpecialBack,0,0),d0
 	bsr.w	EniDec
 
 .c := 0
     rept 128/32
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_SS_Plane_B_Name_Table + planeLoc(128,32*.c,0),VRAM,WRITE),d0
 	moveq	#32-1,d1
 	moveq	#32-1,d2
@@ -10385,12 +10385,12 @@ ContinueScreen_LoadLetters:
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_TitleCard),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_TitleCard).l,a0
 	bsr.w	NemDec
-	lea	(Level_Layout).w,a4
+	lea	(Level_Layout).l,a4
 	lea	(ArtNem_TitleCard2).l,a0
 	bsr.w	NemDecToRAM
 	lea	(ContinueScreen_AdditionalLetters).l,a0
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ContinueScreen_Additional),VRAM,WRITE),(VDP_control_port).l
-	lea	(Level_Layout).w,a1
+	lea	(Level_Layout).l,a1
 	lea	(VDP_data_port).l,a6
 -
 	moveq	#0,d0
@@ -10685,11 +10685,11 @@ TwoPlayerResults:
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_1P2PWins),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_1P2PWins).l,a0
 	bsr.w	NemDec
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_MenuBack).l,a0
 	move.w	#make_art_tile(ArtTile_VRAM_Start,3,0),d0
 	bsr.w	EniDec
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE),d0
 	moveq	#40-1,d1
 	moveq	#28-1,d2
@@ -10701,11 +10701,11 @@ TwoPlayerResults:
 	lea	TwoPlayerResultsPointers(pc),a2
 	movea.l	(a2,d0.w),a0
 	movea.l	4(a2,d0.w),a2
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),d0
 	bsr.w	EniDec
 	jsr	(a2)	; dynamic call! to Setup2PResults_Act, Setup2PResults_Zone, Setup2PResults_Game, Setup2PResults_SpecialAct, or Setup2PResults_SpecialZone, assuming the pointers in TwoPlayerResultsPointers have not been changed
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_TwoPlayerResults),VRAM,WRITE),d0
 	moveq	#40-1,d1
 	moveq	#28-1,d2
@@ -11474,7 +11474,7 @@ sub_8672:
 	lea	(Text2P_SpecialStage).l,a1
 
 loc_8698:
-	lea	(Chunk_Table).l,a2
+	lea	(Scratch_Buffer).l,a2
 	lea	(a2,d2.w),a2
 	moveq	#0,d1
 
@@ -11491,7 +11491,7 @@ loc_8698:
 
 
 sub_86B0:
-	lea	(Chunk_Table).l,a2
+	lea	(Scratch_Buffer).l,a2
 	lea	(a2,d2.w),a2
 	lea	(word_86F0).l,a3
 	moveq	#0,d2
@@ -11536,7 +11536,7 @@ word_86F0:
 
 
 sub_86F6:
-	lea	(Chunk_Table).l,a2
+	lea	(Scratch_Buffer).l,a2
 	lea	(a2,d2.w),a2
 	lea	(dword_8732).l,a3
 	moveq	#0,d2
@@ -11709,11 +11709,11 @@ MenuScreen:
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_LevelSelectPics),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_LevelSelectPics).l,a0
 	bsr.w	NemDec
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_MenuBack).l,a0
 	move.w	#make_art_tile(ArtTile_VRAM_Start,3,0),d0
 	bsr.w	EniDec
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE),d0
 	moveq	#40-1,d1
 	moveq	#28-1,d2
@@ -11726,19 +11726,19 @@ MenuScreen:
 	beq.w	MenuScreen_LevelSelect	; if yes, branch
 
 ;MenuScreen_LevSel2P:
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_LevSel2P).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,0,0),d0
 	bsr.w	EniDec
-	lea	(Chunk_Table+$198).l,a1
+	lea	(Scratch_Buffer+$198).l,a1
 	lea	(MapEng_LevSel2P).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,1,0),d0
 	bsr.w	EniDec
-	lea	(Chunk_Table+$330).l,a1
+	lea	(Scratch_Buffer+$330).l,a1
 	lea	(MapEng_LevSelIcon).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_LevelSelectPics,0,0),d0
 	bsr.w	EniDec
-	lea	(Chunk_Table+$498).l,a2
+	lea	(Scratch_Buffer+$498).l,a2
 
 	moveq	#bytesToWcnt(tiles_to_bytes(1)),d1
 -	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox+11,1,0),(a2)+
@@ -11880,17 +11880,17 @@ Update2PLevSelSelection:
 	lea	(LevSel2PIconData).l,a3
 	lea	(a3,d0.w),a3
 	move.w	#palette_line_3,d0	; highlight text
-	lea	(Chunk_Table+$48).l,a2
+	lea	(Scratch_Buffer+$48).l,a2
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
-	lea	(Chunk_Table+$94).l,a2
+	lea	(Scratch_Buffer+$94).l,a2
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
-	lea	(Chunk_Table+$D8).l,a2
+	lea	(Scratch_Buffer+$D8).l,a2
 	movea.l	4(a3),a1
 	bsr.w	Chk2PZoneCompletion	; has the zone been completed?
 	bmi.s	+	; if not, branch
-	lea	(Chunk_Table+$468).l,a1	; display large X instead of icon
+	lea	(Scratch_Buffer+$468).l,a1	; display large X instead of icon
 +
 	moveq	#2,d1
 -	move.l	(a1)+,(a2)+
@@ -11898,7 +11898,7 @@ Update2PLevSelSelection:
 	lea	$1A(a2),a2
 	dbf	d1,-
 
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	(a3)+,d0
 	moveq	#17-1,d1
 	moveq	#12-1,d2
@@ -11953,17 +11953,17 @@ ClearOld2PLevSelSelection:
 	lea	(LevSel2PIconData).l,a3
 	lea	(a3,d0.w),a3
 	moveq	#palette_line_0,d0
-	lea	(Chunk_Table+$1E0).l,a2
+	lea	(Scratch_Buffer+$1E0).l,a2
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
-	lea	(Chunk_Table+$22C).l,a2
+	lea	(Scratch_Buffer+$22C).l,a2
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
-	lea	(Chunk_Table+$270).l,a2
-	lea	(Chunk_Table+$498).l,a1
+	lea	(Scratch_Buffer+$270).l,a2
+	lea	(Scratch_Buffer+$498).l,a1
 	bsr.w	Chk2PZoneCompletion
 	bmi.s	+
-	lea	(Chunk_Table+$468).l,a1
+	lea	(Scratch_Buffer+$468).l,a1
 +
 	moveq	#2,d1
 -	move.l	(a1)+,(a2)+
@@ -11971,7 +11971,7 @@ ClearOld2PLevSelSelection:
 	lea	$1A(a2),a2
 	dbf	d1,-
 
-	lea	(Chunk_Table+$198).l,a1
+	lea	(Scratch_Buffer+$198).l,a1
 	move.l	(a3)+,d0
 	moveq	#17-1,d1
 	moveq	#12-1,d2
@@ -11989,10 +11989,10 @@ iconData macro txtlabel,txtlabel2,vramAddr,iconPal,iconAddr
 	dc.l iconPal<<24|((iconAddr)&$FFFFFF)	; icon palette and plane data location
     endm
 
-	iconData	Text2P_EmeraldHill,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,2),   0,Chunk_Table+$330
-	iconData	Text2P_MysticCave, Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,22,2),  5,Chunk_Table+$3A8
-	iconData	Text2P_CasinoNight,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,15),  6,Chunk_Table+$3C0
-	iconData	Text2P_Special,    Text2P_Stage,VRAM_Plane_A_Name_Table+planeLoc(64,22,15),12,Chunk_Table+$450
+	iconData	Text2P_EmeraldHill,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,2),   0,Scratch_Buffer+$330
+	iconData	Text2P_MysticCave, Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,22,2),  5,Scratch_Buffer+$3A8
+	iconData	Text2P_CasinoNight,Text2P_Zone, VRAM_Plane_A_Name_Table+planeLoc(64,2,15),  6,Scratch_Buffer+$3C0
+	iconData	Text2P_Special,    Text2P_Stage,VRAM_Plane_A_Name_Table+planeLoc(64,22,15),12,Scratch_Buffer+$450
 
 ; ---------------------------------------------------------------------------
 ; Common menu screen subroutine for transferring text to RAM
@@ -12018,11 +12018,11 @@ MenuScreenTextToRAM:
 ; ===========================================================================
 ; loc_8FCC:
 MenuScreen_Options:
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_Options).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,0,0),d0
 	bsr.w	EniDec
-	lea	(Chunk_Table+$160).l,a1
+	lea	(Scratch_Buffer+$160).l,a1
 	lea	(MapEng_Options).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_MenuBox,1,0),d0
 	bsr.w	EniDec
@@ -12228,10 +12228,10 @@ OptionScreen_DrawSelected:
 	lea	(OptScrBoxData).l,a3
 	lea	(a3,d1.w),a3
 	move.w	#palette_line_3,d0
-	lea	(Chunk_Table+$30).l,a2
+	lea	(Scratch_Buffer+$30).l,a2
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
-	lea	(Chunk_Table+$B6).l,a2
+	lea	(Scratch_Buffer+$B6).l,a2
 	moveq	#0,d1
 	cmpi.b	#2,(Options_menu_box).w
 	beq.s	+
@@ -12246,10 +12246,10 @@ OptionScreen_DrawSelected:
 	bsr.w	MenuScreenTextToRAM
 	cmpi.b	#2,(Options_menu_box).w
 	bne.s	+
-	lea	(Chunk_Table+$C2).l,a2
+	lea	(Scratch_Buffer+$C2).l,a2
 	bsr.w	OptionScreen_HexDumpSoundTest
 +
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	(a3)+,d0
 	moveq	#22-1,d1
 	moveq	#8-1,d2
@@ -12265,10 +12265,10 @@ OptionScreen_DrawUnselected:
 	lea	(OptScrBoxData).l,a3
 	lea	(a3,d1.w),a3
 	moveq	#palette_line_0,d0
-	lea	(Chunk_Table+$190).l,a2
+	lea	(Scratch_Buffer+$190).l,a2
 	movea.l	(a3)+,a1
 	bsr.w	MenuScreenTextToRAM
-	lea	(Chunk_Table+$216).l,a2
+	lea	(Scratch_Buffer+$216).l,a2
 	moveq	#0,d1
 	cmpi.b	#2,(Options_menu_box).w
 	beq.s	+
@@ -12284,11 +12284,11 @@ OptionScreen_DrawUnselected:
 	bsr.w	MenuScreenTextToRAM
 	cmpi.b	#2,(Options_menu_box).w
 	bne.s	+
-	lea	(Chunk_Table+$222).l,a2
+	lea	(Scratch_Buffer+$222).l,a2
 	bsr.w	OptionScreen_HexDumpSoundTest
 
 +
-	lea	(Chunk_Table+$160).l,a1
+	lea	(Scratch_Buffer+$160).l,a1
 	move.l	(a3)+,d0
 	moveq	#22-1,d1
 	moveq	#8-1,d2
@@ -12365,12 +12365,12 @@ off_92F2:
 ; loc_92F6:
 MenuScreen_LevelSelect:
 	; Load foreground (sans zone icon)
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	lea	(MapEng_LevSel).l,a0	; 2 bytes per 8x8 tile, compressed
 	move.w	#make_art_tile(ArtTile_VRAM_Start,0,0),d0
 	bsr.w	EniDec
 
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table,VRAM,WRITE),d0
 	moveq	#40-1,d1
 	moveq	#28-1,d2	; 40x28 = whole screen
@@ -12381,7 +12381,7 @@ MenuScreen_LevelSelect:
 	bsr.w	LevelSelect_DrawSoundNumber
 
 	; Load zone icon
-	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
+	lea	(Scratch_Buffer+planeLoc(40,0,28)).l,a1
 	lea	(MapEng_LevSelIcon).l,a0
 	move.w	#make_art_tile(ArtTile_ArtNem_LevelSelectPics,0,0),d0
 	bsr.w	EniDec
@@ -12665,7 +12665,7 @@ LevelSelect_SwitchTable:
 
 ;loc_95B8:
 LevelSelect_MarkFields:
-	lea	(Chunk_Table).l,a4
+	lea	(Scratch_Buffer).l,a4
 	lea	(LevSel_MarkTable).l,a5
 	lea	(VDP_data_port).l,a6
 	moveq	#0,d0
@@ -12753,7 +12753,7 @@ LevelSelect_DrawIcon:
 	move.w	(Level_select_zone).w,d0
 	lea	(LevSel_IconTable).l,a3
 	lea	(a3,d0.w),a3
-	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
+	lea	(Scratch_Buffer+planeLoc(40,0,28)).l,a1
 	moveq	#0,d0
 	move.b	(a3),d0
 	lsl.w	#3,d0
@@ -13211,10 +13211,10 @@ EndgameCredits:
 	lea	(ArtNem_EndingTitle).l,a0
 	jsrto	NemDec, JmpTo_NemDec
 	lea	(MapEng_EndGameLogo).l,a0
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.w	#0,d0
 	jsrto	EniDec, JmpTo_EniDec
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,12,11),VRAM,WRITE),d0
 	moveq	#16-1,d1
 	moveq	#6-1,d2
@@ -13376,11 +13376,11 @@ loc_A256:
 	clr.b	routine(a0)
 	move.l	a0,-(sp)
 	movea.l	off_A29C(pc,d0.w),a0
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.w	#make_art_tile(ArtTile_ArtNem_EndingPics,0,0),d0
 	jsrto	EniDec, JmpTo_EniDec
 	move	#$2700,sr
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table + planeLoc(64,14,8),VRAM,WRITE),d0
 	moveq	#12-1,d1
 	moveq	#9-1,d2
@@ -13541,7 +13541,7 @@ ObjCC_Init:
 	bne.s	+
 	lea	(MapEng_EndingSonicPlane).l,a0
 +
-	lea	(Chunk_Table).l,a1
+	lea	(Scratch_Buffer).l,a1
 	move.w	#make_art_tile(ArtTile_ArtNem_EndingFinalTornado,0,1),d0
 	jsrto	EniDec, JmpTo_EniDec
 	movea.l	(sp)+,a0 ; load 0bj address
@@ -18525,7 +18525,7 @@ SetHorizScrollFlagsBG2:	; only used by CPZ
 	lea	(VDP_data_port).l,a6
 	lea	(Scroll_flags_BG).w,a2
 	lea	(Camera_BG_X_pos).w,a3
-	lea	(Level_Layout+$80).w,a4
+	lea	(Level_Layout+$80).l,a4
 	move.w	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE)>>16,d2
 	bsr.w	Draw_BG1
 	lea	(Scroll_flags_BG2).w,a2
@@ -18548,7 +18548,7 @@ LoadTilesAsYouMove:
 	lea	(VDP_data_port).l,a6
 	lea	(Scroll_flags_BG_copy).w,a2
 	lea	(Camera_BG_copy).w,a3
-	lea	(Level_Layout+$80).w,a4	; first background line
+	lea	(Level_Layout+$80).l,a4	; first background line
 	move.w	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE)>>16,d2
 	bsr.w	Draw_BG1
 
@@ -18564,14 +18564,14 @@ LoadTilesAsYouMove:
 	beq.s	+
 	lea	(Scroll_flags_copy_P2).w,a2
 	lea	(Camera_P2_copy).w,a3	; second player camera
-	lea	(Level_Layout).w,a4
+	lea	(Level_Layout).l,a4
 	move.w	#vdpComm(VRAM_Plane_A_Name_Table_2P,VRAM,WRITE)>>16,d2
 	bsr.w	Draw_FG_P2
 
 +
 	lea	(Scroll_flags_copy).w,a2
 	lea	(Camera_RAM_copy).w,a3
-	lea	(Level_Layout).w,a4
+	lea	(Level_Layout).l,a4
 	move.w	#vdpComm(VRAM_Plane_A_Name_Table,VRAM,WRITE)>>16,d2
 
 	tst.b	(Screen_redraw_flag).w
@@ -19564,14 +19564,15 @@ GetAddressOfBlockInChunk:
 	lsr.w	#4,d0		; divide by 16 (overall division of 128)
 	andi.w	#$7F,d0
 	add.w	d3,d0		; get offset of current 128x128 in the level layout table
-	moveq	#-1,d3
-	clr.w	d3		; d3 = $FFFF0000
+	clr.l	d3
 	move.b	(a4,d0.w),d3	; get tile ID of the current 128x128 tile
 	lsl.w	#7,d3		; multiply by 128, the size in bytes of a 128x128 in RAM
 	andi.w	#$70,d4		; round down to nearest 16-pixel boundary
 	andi.w	#$E,d5		; force this to be a multiple of 16
 	add.w	d4,d3		; add vertical offset of current 16x16
 	add.w	d5,d3		; add horizontal offset of current 16x16
+	lea		(Chunk_Mappings_Ptr).l,a0
+	add.l	(a0),d3
 	movea.l	d3,a0		; store address, in the metablock table, of the current 16x16
 	movem.l	(sp)+,d4-d5
 	rts
@@ -19800,8 +19801,7 @@ GetBlock:
 	lsr.w	#4,d0		; divide by 16 (overall division of 128)
 	andi.w	#$7F,d0
 	add.w	d3,d0		; get offset of current 128x128 in the level layout table
-	moveq	#-1,d3
-	clr.w	d3		; d3 = $FFFF0000
+	clr.l	d3
 	move.b	(a4,d0.w),d3	; get tile ID of the current 128x128 tile
 	lsl.w	#7,d3		; multiply by 128, the size in bytes of a 128x128 in RAM
 	andi.w	#$70,d4		; round down to nearest 16-pixel boundary
@@ -19812,6 +19812,8 @@ GetBlock:
 	move.w	(a0),d3
 	andi.w	#$3FF,d3
 	lsl.w	#3,d3
+	lea		(Chunk_Mappings_Ptr).l,a1
+	add.l	(a1),d3
 	adda.w	d3,a1
 	rts
 ; End of function GetBlock
@@ -19904,7 +19906,7 @@ DrawInitialBG:
 	lea	(VDP_control_port).l,a5
 	lea	(VDP_data_port).l,a6
 	lea	(Camera_BG_X_pos).w,a3
-	lea	(Level_Layout+$80).w,a4	; background
+	lea	(Level_Layout+$80).l,a4	; background
 	move.w	#vdpComm(VRAM_Plane_B_Name_Table,VRAM,WRITE)>>16,d2
     if fixBugs
 	; The purpose of this function is to dynamically load a portion of
@@ -20082,9 +20084,7 @@ loadZoneBlockMaps:
 +
 	move.l	(a2)+,d0
 	andi.l	#$FFFFFF,d0	; pointer to chunk mappings
-	movea.l	d0,a0
-	lea	(Chunk_Table).l,a1
-	jsrto	KosDec, JmpTo_KosDec
+	move.l	d0,(Chunk_Mappings_Ptr).l
 	bsr.w	loadLevelLayout
 	movea.l	(sp)+,a2	; zone specific pointer in LevelArtPointers
 	addq.w	#4,a2
@@ -20110,7 +20110,7 @@ loadLevelLayout:
 	lea	(Off_Level).l,a0
 	move.w	(a0,d0.w),d0
 	lea	(a0,d0.l),a0
-	lea	(Level_Layout).w,a1
+	lea	(Level_Layout).l,a1
 	jmpto	KosDec, JmpTo_KosDec
 ; End of function loadLevelLayout
 
@@ -20126,7 +20126,7 @@ loadLevelLayout:
 	; when the player moves to the left.
 
 	; Clear layout data.
-	lea	(Level_Layout).w,a3
+	lea	(Level_Layout).l,a3
 	move.w	#bytesToLcnt(Level_Layout_End-Level_Layout),d1
 	moveq	#0,d0
 -	move.l	d0,(a3)+
@@ -20134,10 +20134,10 @@ loadLevelLayout:
 
 	; The rows of the foreground and background layouts are interleaved
 	; in memory. This is done here:
-	lea	(Level_Layout).w,a3	; Foreground.
+	lea	(Level_Layout).l,a3	; Foreground.
 	moveq	#0,d1			; Index into 'Off_Level' to get level foreground layout.
 	bsr.w	.loadLayout
-	lea	(Level_Layout+$80).w,a3	; Background.
+	lea	(Level_Layout+$80).l,a3	; Background.
 	moveq	#2,d1			; Index into 'Off_Level' to get level background layout.
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -20198,7 +20198,7 @@ loadLevelLayout:
 	lea	($FE0000).l,a1
 	lea	($FE0000+8*8*2).l,a2
 	; Source of 256x256 chunks.
-	lea	(Chunk_Table).l,a3
+	lea	(Scratch_Buffer).l,a3
 
 	move.w	#64-1,d1	; Process 64 256x256 chunks.
 -	bsr.w	ConvertHalfOf256x256ChunkToTwo128x128Chunks
@@ -20224,9 +20224,9 @@ loadLevelLayout:
 ;EliminateChunkDuplicates:
 	; This is a chunk de-duplicator.
 
-	; Copy first chunk into 'Chunk_Table'.
+	; Copy first chunk into 'Scratch_Buffer'.
 	lea	($FE0000).l,a1
-	lea	(Chunk_Table).l,a3
+	lea	(Scratch_Buffer).l,a3
 
 	moveq	#bytesToLcnt(8*8*2),d0
 -	move.l	(a1)+,(a3)+
@@ -20237,7 +20237,7 @@ loadLevelLayout:
 	move.w	#$100-1,d5	; $100 chunks
 ;loc_E55A:
 .nextChunk:
-	lea	(Chunk_Table).l,a3
+	lea	(Scratch_Buffer).l,a3
 	move.w	d7,d6
 
 .doNextComparison:
@@ -21536,7 +21536,7 @@ LevEvents_CNZ2_Routine1:
 	move.w	(Camera_X_pos).w,(Tails_Min_X_pos).w
 	move.w	#$62E,(Camera_Max_Y_pos_target).w
 	move.w	#$62E,(Tails_Max_Y_pos).w
-	move.b	#$F9,(Level_Layout+$C54).w
+	move.b	#$F9,(Level_Layout+$C54).l
 	addq.b	#2,(Dynamic_Resize_Routine).w
 +
 	rts
@@ -21550,7 +21550,7 @@ LevEvents_CNZ2_Routine1:
 LevEvents_CNZ2_Routine2:
 	cmpi.w	#$2890,(Camera_X_pos).w
 	blo.s	+	; rts
-	move.b	#$F9,(Level_Layout+$C50).w
+	move.b	#$F9,(Level_Layout+$C50).l
 	move.w	#$2860,(Camera_Min_X_pos).w
 	move.w	#$28E0,(Camera_Max_X_pos).w
 	move.w	#$2860,(Tails_Min_X_pos).w
@@ -28956,7 +28956,7 @@ loc_15714:
 	tst.w	(Two_player_mode).w
 	beq.s	loc_15758
 	lea	(Camera_X_pos_P2).w,a3
-	lea	(Level_Layout).w,a4
+	lea	(Level_Layout).l,a4
 	move.w	#vdpComm(VRAM_Plane_A_Name_Table_2P,VRAM,WRITE)>>16,d2
 
 	moveq	#1,d6
@@ -28974,7 +28974,7 @@ loc_15714:
 
 loc_15758:
 	lea	(Camera_X_pos).w,a3
-	lea	(Level_Layout).w,a4
+	lea	(Level_Layout).l,a4
 	move.w	#vdpComm(VRAM_Plane_A_Name_Table,VRAM,WRITE)>>16,d2
 	move.w	(TitleCard_Background+titlecard_vram_dest).w,d4
 
@@ -29032,7 +29032,7 @@ LoadTitleCard0:
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_TitleCard),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_TitleCard).l,a0
 	jsrto	NemDec, JmpTo2_NemDec
-	lea	(Level_Layout).w,a4
+	lea	(Level_Layout).l,a4
 	lea	(ArtNem_TitleCard2).l,a0
 	jmpto	NemDecToRAM, JmpTo_NemDecToRAM
 ; ===========================================================================
@@ -29048,7 +29048,7 @@ LoadTitleCard:
 
 loc_157EC:
 	move	#$2700,sr
-	lea	(Level_Layout).w,a1
+	lea	(Level_Layout).l,a1
 	lea	(VDP_data_port).l,a6
 	move.l	d0,4(a6)
 
@@ -43018,9 +43018,8 @@ Find_Tile:
 	lsr.w	#4,d1	; x_pos/128 = x_of_chunk
 	andi.w	#$7F,d1
 	add.w	d1,d0	; d0 is relevant chunk ID now
-	moveq	#-1,d1
-	clr.w	d1		; d1 is now $FFFF0000 = Chunk_Table
-	lea	(Level_Layout).w,a1
+	clr.l	d1
+	lea	(Level_Layout).l,a1
 	move.b	(a1,d0.w),d1	; move 128*128 chunk ID to d1
 	add.w	d1,d1
 	move.w	word_1E5D0(pc,d1.w),d1
@@ -43029,6 +43028,8 @@ Find_Tile:
 	add.w	d0,d1
 	andi.w	#$E,d4	; x_pos/8
 	add.w	d4,d1
+	lea		(Chunk_Mappings_Ptr).l,a1
+	add.l	(a1),d1
 	movea.l	d1,a1	; address of block ID
 	rts
 ; ===========================================================================
@@ -67415,7 +67416,7 @@ loc_31D7E:
 	andi.b	#$F0,6(a1)
 	ori.b	#3,6(a1)
 	_move.b	#8,0(a1)
-	move.b	#$DD,(Level_Layout+$C54).w
+	move.b	#$DD,(Level_Layout+$C54).l
 	move.b	#1,(Screen_redraw_flag).w
 	move.w	#-$12,(Boss_Countdown).w
 
@@ -78895,7 +78896,7 @@ ObjB0_Init:
 
 	lea	off_3A294(pc),a1 ; pointers to mapping DPLC data
 	lea	(ArtUnc_Sonic).l,a3
-	lea	(Chunk_Table).l,a5
+	lea	(Scratch_Buffer).l,a5
 	moveq	#4-1,d5 ; there are 4 mapping frames to loop over
 
 	; this copies the tiles that we want to scale up from ROM to RAM
@@ -78959,8 +78960,8 @@ copydst := copydst + tiles_to_bytes(width * height) * 2 * 2
     endm
 ;word_3A2A4:
 SonicRunningSpriteScaleData:
-copysrc := Chunk_Table
-copydst := Chunk_Table + $B00
+copysrc := Scratch_Buffer
+copydst := Scratch_Buffer + $B00
 SegaScreenScaledSpriteDataStart = copydst
 	rept 4 ; repeat 4 times since there are 4 frames to scale up
 	; piece 1 of each frame (the smaller top piece):
@@ -78970,7 +78971,7 @@ SegaScreenScaledSpriteDataStart = copydst
 	endm
 SegaScreenScaledSpriteDataEnd = copydst
 	if copysrc > SegaScreenScaledSpriteDataStart
-	fatal "Scale copy source overran allocated size. Try changing the initial value of copydst to Chunk_Table+$\{copysrc-Chunk_Table}"
+	fatal "Scale copy source overran allocated size. Try changing the initial value of copydst to Scratch_Buffer+$\{copysrc-Scratch_Buffer}"
 	endif
 ; ===========================================================================
 
@@ -79640,13 +79641,13 @@ ObjB2_Jump_to_plane:
 	beq.s	+
 	addq.b	#2,routine_secondary(a0)
 	move.w	#$20,objoff_2E(a0)
-	lea	(Level_Layout+$0D2).w,a1
+	lea	(Level_Layout+$0D2).l,a1
 	move.l	#$501F0025,(a1)+
-	lea	(Level_Layout+$1D2).w,a1
+	lea	(Level_Layout+$1D2).l,a1
 	move.l	#$25001F50,(a1)+
-	lea	(Level_Layout+$BD6).w,a1
+	lea	(Level_Layout+$BD6).l,a1
 	move.l	#$501F0025,(a1)+
-	lea	(Level_Layout+$CD6).w,a1
+	lea	(Level_Layout+$CD6).l,a1
 	move.l	#$25001F50,(a1)+
 + ; BranchTo6_JmpTo45_DisplaySprite:
 	jmpto	DisplaySprite, JmpTo45_DisplaySprite
@@ -81701,10 +81702,10 @@ ObjC2_Bust:
 	move.b	#2,routine(a0)
 	bset	#1,(MainCharacter+status).w
 	bclr	#3,(MainCharacter+status).w
-	lea	(Level_Layout+$850).w,a1	; alter the level layout
+	lea	(Level_Layout+$850).l,a1	; alter the level layout
 	move.l	#$8A707172,(a1)+
 	move.w	#$7374,(a1)+
-	lea	(Level_Layout+$950).w,a1
+	lea	(Level_Layout+$950).l,a1
 	move.l	#$6E787978,(a1)+
 	move.w	#$787A,(a1)+
 	move.b	#1,(Screen_redraw_flag).w
@@ -86777,7 +86778,7 @@ Dynamic_HTZ:
 	asr.w	#3,d2
 	move.l	a2,-(sp)
 	lea	(ArtUnc_HTZClouds).l,a0
-	lea	(Chunk_Table+$7C00).l,a2
+	lea	(Scratch_Buffer+$7C00).l,a2
 	moveq	#16-1,d1
 ; loc_3FE78:
 .cloudLoop:
@@ -86822,7 +86823,7 @@ Dynamic_HTZ:
 	dbf	d1,.cloudLoop
 ; loc_3FEEC:
 .done:
-	move.l	#(Chunk_Table+$7C00) & $FFFFFF,d1
+	move.l	#(Scratch_Buffer+$7C00) & $FFFFFF,d1
 	move.w	#tiles_to_bytes(ArtTile_ArtUnc_HTZClouds),d2
 	move.w	#tiles_to_bytes(8)/2,d3	; DMA transfer length (in words)
 	jsr	(QueueDMATransfer).l
@@ -87316,9 +87317,9 @@ Animated_Null:
 	bpl.s	-	; rts	; do it every 8th frame
 	move.b	#7,(CPZ_UnkScroll_Timer).w
 	move.b	#1,(Screen_redraw_flag).w
-	lea	(Chunk_Table+$EA*$80).l,a1 ; chunks $EA-$ED, $FFFF7500 - $FFFF7700
+	lea	(Scratch_Buffer+$EA*$80).l,a1 ; chunks $EA-$ED, $FFFF7500 - $FFFF7700
 	bsr.s	+
-	lea	(Chunk_Table+$FA*$80).l,a1 ; chunks $FA-$FD, $FFFF7D00 - $FFFF7F00
+	lea	(Scratch_Buffer+$FA*$80).l,a1 ; chunks $FA-$FD, $FFFF7D00 - $FFFF7F00
 +
 	move.w	#8-1,d1
 
@@ -91572,43 +91573,43 @@ BM16_EHZ:	BINCLUDE	"mappings/16x16/EHZ.kos"
 ArtKos_EHZ:	BINCLUDE	"art/kosinski/EHZ_HTZ.kos"
 BM16_HTZ:	BINCLUDE	"mappings/16x16/HTZ.kos"
 ArtKos_HTZ:	BINCLUDE	"art/kosinski/HTZ_Supp.kos" ; HTZ pattern suppliment to EHZ level patterns
-BM128_EHZ:	BINCLUDE	"mappings/128x128/EHZ_HTZ.kos"
+BM128_EHZ:	BINCLUDE	"mappings/128x128/EHZ_HTZ.unc"
 
 BM16_MTZ:	BINCLUDE	"mappings/16x16/MTZ.kos"
 ArtKos_MTZ:	BINCLUDE	"art/kosinski/MTZ.kos"
-BM128_MTZ:	BINCLUDE	"mappings/128x128/MTZ.kos"
+BM128_MTZ:	BINCLUDE	"mappings/128x128/MTZ.unc"
 
 BM16_HPZ:	;BINCLUDE	"mappings/16x16/HPZ.kos"
 ArtKos_HPZ:	;BINCLUDE	"art/kosinski/HPZ.kos"
-BM128_HPZ:	;BINCLUDE	"mappings/128x128/HPZ.kos"
+BM128_HPZ:	;BINCLUDE	"mappings/128x128/HPZ.unc"
 
 BM16_OOZ:	BINCLUDE	"mappings/16x16/OOZ.kos"
 ArtKos_OOZ:	BINCLUDE	"art/kosinski/OOZ.kos"
-BM128_OOZ:	BINCLUDE	"mappings/128x128/OOZ.kos"
+BM128_OOZ:	BINCLUDE	"mappings/128x128/OOZ.unc"
 
 BM16_MCZ:	BINCLUDE	"mappings/16x16/MCZ.kos"
 ArtKos_MCZ:	BINCLUDE	"art/kosinski/MCZ.kos"
-BM128_MCZ:	BINCLUDE	"mappings/128x128/MCZ.kos"
+BM128_MCZ:	BINCLUDE	"mappings/128x128/MCZ.unc"
 
 BM16_CNZ:	BINCLUDE	"mappings/16x16/CNZ.kos"
 ArtKos_CNZ:	BINCLUDE	"art/kosinski/CNZ.kos"
-BM128_CNZ:	BINCLUDE	"mappings/128x128/CNZ.kos"
+BM128_CNZ:	BINCLUDE	"mappings/128x128/CNZ.unc"
 
 BM16_CPZ:	BINCLUDE	"mappings/16x16/CPZ_DEZ.kos"
 ArtKos_CPZ:	BINCLUDE	"art/kosinski/CPZ_DEZ.kos"
-BM128_CPZ:	BINCLUDE	"mappings/128x128/CPZ_DEZ.kos"
+BM128_CPZ:	BINCLUDE	"mappings/128x128/CPZ_DEZ.unc"
 
 ; This file contains $320 blocks, overflowing the 'Block_table' buffer. This causes
 ; 'TempArray_LayerDef' to be overwritten with (empty) block data.
 ; If only 'fixBugs' could fix this...
 BM16_ARZ:	BINCLUDE	"mappings/16x16/ARZ.kos"
 ArtKos_ARZ:	BINCLUDE	"art/kosinski/ARZ.kos"
-BM128_ARZ:	BINCLUDE	"mappings/128x128/ARZ.kos"
+BM128_ARZ:	BINCLUDE	"mappings/128x128/ARZ.unc"
 
 BM16_WFZ:	BINCLUDE	"mappings/16x16/WFZ_SCZ.kos"
 ArtKos_SCZ:	BINCLUDE	"art/kosinski/WFZ_SCZ.kos"
 ArtKos_WFZ:	BINCLUDE	"art/kosinski/WFZ_Supp.kos" ; WFZ pattern suppliment to SCZ tiles
-BM128_WFZ:	BINCLUDE	"mappings/128x128/WFZ_SCZ.kos"
+BM128_WFZ:	BINCLUDE	"mappings/128x128/WFZ_SCZ.unc"
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;-----------------------------------------------------------------------------------
